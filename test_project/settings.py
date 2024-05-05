@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import datetime
 
+import django_heroku
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -26,7 +27,7 @@ SECRET_KEY = 'django-insecure-j-j)_d*m7xes3mg#$jz6jz0uinc06)j36nart$a^to1ds_59$x
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 AUTH_USER_MODEL = 'authentication.User'
 # Application definition
@@ -215,3 +216,5 @@ TILL_NUMBER = '5737915'
 
 PAYPAL_CLIENT_ID = 'AXhrsP_no8GZjZu_vVXw64at5ItQUqH502y2ovLfINjagVtBGjJK4_mZQ_NRHVer38j5RUMjsLSay5pp'
 PAYPAL_CLIENT_SECRET = 'ELiRbt7UjajjGTZGuXoYLTIZ4gx4TwEeqeAAxUilyOs-AbIRSBCGSwXl0GiV30sMp2lIGAbqkUkHAmJC'
+
+django_heroku.settings(locals())
