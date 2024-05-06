@@ -3,6 +3,8 @@ from .models import Categories, Brand, Functionalities, Kits, Tools, ToolImages
 import cloudinary
 from cloudinary.models import CloudinaryField
 
+from django.conf import settings
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,6 +17,12 @@ class CategorySerializer(serializers.ModelSerializer):
         instance = super().create(validated_data)
         if image:
             # Upload image to Cloudinary
+            cloudinary_storage_config = settings.CLOUDINARY_STORAGE
+            cloudinary.config(
+                cloud_name=cloudinary_storage_config['CLOUD_NAME'],
+                api_key=cloudinary_storage_config['API_KEY'],
+                api_secret=cloudinary_storage_config['API_SECRET']
+            )
             uploaded_image = cloudinary.uploader.upload(image)
             instance.image = uploaded_image['secure_url']
             instance.save()
@@ -32,6 +40,12 @@ class BrandSerializer(serializers.ModelSerializer):
         instance = super().create(validated_data)
         if image:
             # Upload image to Cloudinary
+            cloudinary_storage_config = settings.CLOUDINARY_STORAGE
+            cloudinary.config(
+                cloud_name=cloudinary_storage_config['CLOUD_NAME'],
+                api_key=cloudinary_storage_config['API_KEY'],
+                api_secret=cloudinary_storage_config['API_SECRET']
+            )
             uploaded_image = cloudinary.uploader.upload(image)
             instance.image = uploaded_image['secure_url']
             instance.save()
@@ -49,6 +63,12 @@ class FunctionalitySerializer(serializers.ModelSerializer):
         instance = super().create(validated_data)
         if image:
             # Upload image to Cloudinary
+            cloudinary_storage_config = settings.CLOUDINARY_STORAGE
+            cloudinary.config(
+                cloud_name=cloudinary_storage_config['CLOUD_NAME'],
+                api_key=cloudinary_storage_config['API_KEY'],
+                api_secret=cloudinary_storage_config['API_SECRET']
+            )
             uploaded_image = cloudinary.uploader.upload(image)
             instance.image = uploaded_image['secure_url']
             instance.save()
@@ -66,6 +86,12 @@ class KitSerializer(serializers.ModelSerializer):
         instance = super().create(validated_data)
         if image:
             # Upload image to Cloudinary
+            cloudinary_storage_config = settings.CLOUDINARY_STORAGE
+            cloudinary.config(
+                cloud_name=cloudinary_storage_config['CLOUD_NAME'],
+                api_key=cloudinary_storage_config['API_KEY'],
+                api_secret=cloudinary_storage_config['API_SECRET']
+            )
             uploaded_image = cloudinary.uploader.upload(image)
             instance.image = uploaded_image['secure_url']
             instance.save()
@@ -88,6 +114,12 @@ class ToolSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         image_data = validated_data.pop('image')
         tool = Tools.objects.create(**validated_data)
+        cloudinary_storage_config = settings.CLOUDINARY_STORAGE
+        cloudinary.config(
+            cloud_name=cloudinary_storage_config['CLOUD_NAME'],
+            api_key=cloudinary_storage_config['API_KEY'],
+            api_secret=cloudinary_storage_config['API_SECRET']
+        )
         tool.image = cloudinary.uploader.upload(image_data)['url']
         tool.save()
         return tool
@@ -103,6 +135,13 @@ class ToolImageSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         image_data = validated_data.pop('image')
         tool = Tools.objects.create(**validated_data)
+        cloudinary_storage_config = settings.CLOUDINARY_STORAGE
+        cloudinary.config(
+            cloud_name=cloudinary_storage_config['CLOUD_NAME'],
+            api_key=cloudinary_storage_config['API_KEY'],
+            api_secret=cloudinary_storage_config['API_SECRET']
+        )
         tool.image = cloudinary.uploader.upload(image_data)['url']
         tool.save()
         return tool
+
