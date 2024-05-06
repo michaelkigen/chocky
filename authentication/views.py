@@ -63,7 +63,7 @@ class LoginAPIView(generics.GenericAPIView):
 
         # Retrieve the user object
         user = User.objects.get(email=email)
-        user.is_verified = True
+        
         # Generate tokens
         refresh_token = RefreshToken.for_user(user)
         access_token = refresh_token.access_token
