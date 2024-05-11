@@ -205,11 +205,12 @@ CLOUDINARY_STORAGE = {
     'API_KEY': '238226323145611',
     'API_SECRET': 'vbOSg-MiYyn4-_sjCsTYP2fHvI0',
 }
+CORS_ALLOW_ALL_ORIGINS =True
 
-CORS_ALLOWED_ORIGINS = [
+# CORS_ALLOWED_ORIGINS = [
 
-    "http://localhost:5173",
-]
+#     "http://localhost:5173",
+# ]
 
 MPESA_ENVIRONMENT = 'production'
 HOST_NAME=  'https://treegroup@maiyotech.com'   
