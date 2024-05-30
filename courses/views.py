@@ -5,7 +5,13 @@ from .models import Course, Sub_Course, Photos
 from .serializers import Sub_Course_serialier, Course_serialier ,Photos_serializer
 
 from cloudinary import api
+
+from django.shortcuts import get_object_or_404
 from django.conf import settings
+
+import paypalrestsdk 
+
+from payments.models import Payment
 
 
 class Courses_APIview(APIView):
@@ -163,4 +169,84 @@ class PhotoDetailedAPiview(APIView):
             return Response(status=status.HTTP_200_OK)
         return Response({'error':'photo not found'},status=status.HTTP_404_NOT_FOUND)
                 
-        
+
+# # paypal
+# paypalrestsdk.configure({
+#             "mode": "sandbox", # sandbox or live
+#             "client_id": "AXhrsP_no8GZjZu_vVXw64at5ItQUqH502y2ovLfINjagVtBGjJK4_mZQ_NRHVer38j5RUMjsLSay5pp",
+#             "client_secret": "ELiRbt7UjajjGTZGuXoYLTIZ4gx4TwEeqeAAxUilyOs-AbIRSBCGSwXl0GiV30sMp2lIGAbqkUkHAmJC"
+# })
+
+
+
+# # Initialize PayPal SDK
+
+
+# class CreatePaymentView(APIView):
+#     def post(self, request):
+#         user = self.request.user
+#         cart = Cart.objects.filter(user=user).first()
+
+#         total = sum([item.quantity * item.tool.price for item in cart.cart_items.all()])
+#         total = round(total, 2)  # Ensure the total is rounded to two decimal places
+
+#         payment = paypalrestsdk.Payment({
+#             "intent": "sale",
+#             "payer": {
+#                 "payment_method": "paypal"
+#             },
+#             "redirect_urls": {
+#                 "return_url": "https://chocky-0b334251234b.herokuapp.com/",
+#                 "cancel_url": "https://chocky-0b334251234b.herokuapp.com/"
+#             },
+#             "transactions": [{
+#                 "item_list": {
+#                     "items": [{
+#                         "name": "Cart Items",
+#                         "sku": "cart",
+#                         "price": str(total),
+#                         "currency": "USD",
+#                         "quantity": 1
+#                     }]
+#                 },
+#                 "amount": {
+#                     "total": str(total),
+#                     "currency": "USD"
+#                 },
+#                 "description": "Payment for cart items."
+#             }]
+#         })
+
+#         if payment.create():
+#             # Save payment details to the database
+#             Payment.objects.create(
+#                 user=user,
+#                 payment_id=payment.id,
+#                 amount=total,
+#                 currency="USD",
+#                 status="created"
+#             )
+#             for link in payment.links:
+#                 if link.rel == "approval_url":
+#                     approval_url = link.href
+#                     return Response({"approval_url": approval_url})
+#         else:
+#             return Response({"error": payment.error}, status=status.HTTP_400_BAD_REQUEST)
+
+# class ExecutePaymentView(APIView):
+#     def post(self, request):
+#         payment_id = request.data.get('paymentID')
+#         payer_id = request.data.get('payerID')
+
+#         payment = get_object_or_404(Payment, payment_id=payment_id)
+#         paypal_payment = paypalrestsdk.Payment.find(payment_id)
+
+#         if paypal_payment.execute({"payer_id": payer_id}):
+#             # Update payment status in the database
+#             payment.payer_id = payer_id
+#             payment.status = "executed"
+#             payment.save()
+#             return Response({"status": "Payment executed successfully"})
+#         else:
+#             return Response({"error": paypal_payment.error}, status=status.HTTP_400_BAD_REQUEST)
+      

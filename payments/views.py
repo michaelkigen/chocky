@@ -273,13 +273,13 @@ class CreatePaymentView(APIView):
                     "items": [{
                         "name": "Cart Items",
                         "sku": "cart",
-                        "price": str(total),
+                        "price": "240",
                         "currency": "USD",
                         "quantity": 1
                     }]
                 },
                 "amount": {
-                    "total": str(total),
+                    "total": "240",
                     "currency": "USD"
                 },
                 "description": "Payment for cart items."
