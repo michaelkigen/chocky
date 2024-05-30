@@ -368,8 +368,8 @@ class CreatePaymentView(APIView):
                 "payment_method": "paypal"
             },
             "redirect_urls": {
-                "return_url": "http://localhost:3000/payment/execute",
-                "cancel_url": "http://localhost:3000/payment/cancel"
+                "return_url": "https://chocky-0b334251234b.herokuapp.com/",
+                "cancel_url": "https://chocky-0b334251234b.herokuapp.com/"
             },
             "transactions": [{
                 "item_list": {
