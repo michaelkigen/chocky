@@ -1,25 +1,21 @@
 from __future__ import unicode_literals
-
-import json
-from django.shortcuts import render
-from django.http import HttpResponse
-from django.views.generic import View
 from .mpesa import sendSTK, check_payment_status
 from rest_framework.views import APIView
-from rest_framework.generics import ListCreateAPIView
 from rest_framework.status import HTTP_200_OK,HTTP_404_NOT_FOUND
 from rest_framework.response import Response
 from .models import PaymentTransaction
 from django.http import JsonResponse
 from rest_framework.permissions import AllowAny
-from order.views import CheckoutView , CartViewSet
-from order.models import Cart , CartItem ,Order
-from django.db.models import Sum
-from authentication.models import User
-from rest_framework import generics, permissions,status
-from .models import PaymentTransaction
+from order.views import CheckoutView 
+from order.models import Cart 
+from rest_framework import status
+from .models import PaymentTransaction,Payment
 from django.shortcuts import get_object_or_404
 from django.conf import settings
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import paypalrestsdk 
 # Create your views here.
         
 
@@ -241,118 +237,8 @@ class ValidateView(APIView):
 
         # Send the response back to the server
         return Response(message, status=HTTP_200_OK)
-    
-    
-# class PaymentTransactionListView(generics.ListAPIView):
-#     serializer_class = PaymentTransactionSerializer
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get_queryset(self):
-#         user = self.request.user
-#         return PaymentTransaction.objects.all()
-
-# class SearchTransaction(APIView):
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get(self, request, trans_id, format=None): 
-#         # Use a GET request and specify trans_id as a URL parameter
-#         # This allows you to retrieve a specific transaction directly
-#         transaction = get_object_or_404(PaymentTransaction, trans_id=trans_id)
-
-#         # Now, you can serialize the transaction and return it as a response
-#         serializer = PaymentTransactionSerializer(transaction)
-#         return Response(serializer.data, status=status.HTTP_200_OK)
-        
-
-# class SortTransactionByAccount(View):
-#     def get(self, request, phone_number):
-#         # Retrieve the user object with the given phone number
-#         user = get_object_or_404(User, phone_number=phone_number)
-        
-#         # Retrieve all payment transactions made by the user
-#         transactions = PaymentTransaction.objects.filter(user=user)
-        
-#         # Prepare the data to return
-#         transaction_data = []
-#         for transaction in transactions:
-#             transaction_data.append({
-#                 'trans_id': transaction.trans_id,
-#                 'amount': str(transaction.amount),
-#                 'is_finished': transaction.is_finished,
-#                 'is_successful': transaction.is_successful,
-#                 'order_id': str(transaction.order_id),
-#                 'checkout_request_id': transaction.checkout_request_id,
-#                 'date_created': transaction.date_created.strftime('%Y-%m-%d %H:%M:%S'),
-#                 'receipt_number': transaction.receipt_number,
-#                 'message': transaction.message
-#             })
-        
-#         return JsonResponse({'transactions': transaction_data})
-# from rest_framework.response import Response
-# from rest_framework.views import APIView
-# from paypalrestsdk import Payment , configure
-
-# class PaymentView(APIView):
-#     def post(self, request):
-#         # Create a payment object
-#         configure({
-#             "mode": "sandbox", # sandbox or live
-#             "client_id": "AXhrsP_no8GZjZu_vVXw64at5ItQUqH502y2ovLfINjagVtBGjJK4_mZQ_NRHVer38j5RUMjsLSay5pp",
-#             "client_secret": "ELiRbt7UjajjGTZGuXoYLTIZ4gx4TwEeqeAAxUilyOs-AbIRSBCGSwXl0GiV30sMp2lIGAbqkUkHAmJC" })
-#         payment = Payment({
-#             'intent': 'sale',
-#             'payer': {
-#                 'payment_method': 'paypal'
-#             },
-#             'redirect_urls': {
-#                 'return_url': 'http://127.0.0.1:8000/',
-#                 'cancel_url': 'http://127.0.0.1:8000/'
-#             },
-#             'transactions': [{
-#                 'item_list': {
-#                     'items': [{
-#                         'name': 'item',
-#                         'sku': 'item-sku',
-#                         'price': '10.00',
-#                         'currency': 'USD',
-#                         'quantity': 1
-#                     }]
-#                 },
-#                 'amount': {
-#                     'currency': 'USD',
-#                     'total': '10.00'
-#                 }
-#             }]
-#         })
-
-#         # Redirect the user to PayPal to authorize the payment
-#         return Response({'redirect_url':'d'})
-    
-# class PaymentResponseView(APIView):
-#     def post(self, request):
-#         # Get the payment ID from the request
-#         payment_id = request.data['payment_id']
-
-#         # Get the payment object from PayPal
-#         payment = Payment.find(payment_id)
-
-#         # Verify the payment
-#         if payment.state == 'approved':
-#             # Update the order status
-#             # ...
-#             return Response({'message': 'Payment successful'})
-#         else:
-#             # Handle payment failure
-#             # ...
-#             return Response({'message': 'Payment failed'})
-        
-        
-# views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-import paypalrestsdk
-from django.conf import settings
+ 
+ 
 
 paypalrestsdk.configure({
             "mode": "sandbox", # sandbox or live
@@ -360,8 +246,19 @@ paypalrestsdk.configure({
             "client_secret": "ELiRbt7UjajjGTZGuXoYLTIZ4gx4TwEeqeAAxUilyOs-AbIRSBCGSwXl0GiV30sMp2lIGAbqkUkHAmJC"
 })
 
+
+
+# Initialize PayPal SDK
+
+
 class CreatePaymentView(APIView):
     def post(self, request):
+        user = self.request.user
+        cart = Cart.objects.filter(user=user).first()
+
+        total = sum([item.quantity * item.tool.price for item in cart.cart_items.all()])
+        total = round(total, 2)  # Ensure the total is rounded to two decimal places
+
         payment = paypalrestsdk.Payment({
             "intent": "sale",
             "payer": {
@@ -374,22 +271,30 @@ class CreatePaymentView(APIView):
             "transactions": [{
                 "item_list": {
                     "items": [{
-                        "name": "item",
-                        "sku": "item",
-                        "price": "1.00",
+                        "name": "Cart Items",
+                        "sku": "cart",
+                        "price": str(total),
                         "currency": "USD",
                         "quantity": 1
                     }]
                 },
                 "amount": {
-                    "total": "1.00",
+                    "total": str(total),
                     "currency": "USD"
                 },
-                "description": "This is the payment transaction description."
+                "description": "Payment for cart items."
             }]
         })
 
         if payment.create():
+            # Save payment details to the database
+            Payment.objects.create(
+                user=user,
+                payment_id=payment.id,
+                amount=total,
+                currency="USD",
+                status="created"
+            )
             for link in payment.links:
                 if link.rel == "approval_url":
                     approval_url = link.href
@@ -401,9 +306,16 @@ class ExecutePaymentView(APIView):
     def post(self, request):
         payment_id = request.data.get('paymentID')
         payer_id = request.data.get('payerID')
-        payment = paypalrestsdk.Payment.find(payment_id)
 
-        if payment.execute({"payer_id": payer_id}):
+        payment = get_object_or_404(Payment, payment_id=payment_id)
+        paypal_payment = paypalrestsdk.Payment.find(payment_id)
+
+        if paypal_payment.execute({"payer_id": payer_id}):
+            # Update payment status in the database
+            payment.payer_id = payer_id
+            payment.status = "executed"
+            payment.save()
             return Response({"status": "Payment executed successfully"})
         else:
-            return Response({"error": payment.error}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": paypal_payment.error}, status=status.HTTP_400_BAD_REQUEST)
+
