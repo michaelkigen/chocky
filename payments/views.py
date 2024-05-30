@@ -288,60 +288,122 @@ class ValidateView(APIView):
 #             })
         
 #         return JsonResponse({'transactions': transaction_data})
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from paypalrestsdk import Payment , configure
+# from rest_framework.response import Response
+# from rest_framework.views import APIView
+# from paypalrestsdk import Payment , configure
 
-class PaymentView(APIView):
-    def post(self, request):
-        # Create a payment object
-        configure({
+# class PaymentView(APIView):
+#     def post(self, request):
+#         # Create a payment object
+#         configure({
+#             "mode": "sandbox", # sandbox or live
+#             "client_id": "AXhrsP_no8GZjZu_vVXw64at5ItQUqH502y2ovLfINjagVtBGjJK4_mZQ_NRHVer38j5RUMjsLSay5pp",
+#             "client_secret": "ELiRbt7UjajjGTZGuXoYLTIZ4gx4TwEeqeAAxUilyOs-AbIRSBCGSwXl0GiV30sMp2lIGAbqkUkHAmJC" })
+#         payment = Payment({
+#             'intent': 'sale',
+#             'payer': {
+#                 'payment_method': 'paypal'
+#             },
+#             'redirect_urls': {
+#                 'return_url': 'http://127.0.0.1:8000/',
+#                 'cancel_url': 'http://127.0.0.1:8000/'
+#             },
+#             'transactions': [{
+#                 'item_list': {
+#                     'items': [{
+#                         'name': 'item',
+#                         'sku': 'item-sku',
+#                         'price': '10.00',
+#                         'currency': 'USD',
+#                         'quantity': 1
+#                     }]
+#                 },
+#                 'amount': {
+#                     'currency': 'USD',
+#                     'total': '10.00'
+#                 }
+#             }]
+#         })
+
+#         # Redirect the user to PayPal to authorize the payment
+#         return Response({'redirect_url':'d'})
+    
+# class PaymentResponseView(APIView):
+#     def post(self, request):
+#         # Get the payment ID from the request
+#         payment_id = request.data['payment_id']
+
+#         # Get the payment object from PayPal
+#         payment = Payment.find(payment_id)
+
+#         # Verify the payment
+#         if payment.state == 'approved':
+#             # Update the order status
+#             # ...
+#             return Response({'message': 'Payment successful'})
+#         else:
+#             # Handle payment failure
+#             # ...
+#             return Response({'message': 'Payment failed'})
+        
+        
+# views.py
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import paypalrestsdk
+from django.conf import settings
+
+paypalrestsdk.configure({
             "mode": "sandbox", # sandbox or live
             "client_id": "AXhrsP_no8GZjZu_vVXw64at5ItQUqH502y2ovLfINjagVtBGjJK4_mZQ_NRHVer38j5RUMjsLSay5pp",
-            "client_secret": "ELiRbt7UjajjGTZGuXoYLTIZ4gx4TwEeqeAAxUilyOs-AbIRSBCGSwXl0GiV30sMp2lIGAbqkUkHAmJC" })
-        payment = Payment({
-            'intent': 'sale',
-            'payer': {
-                'payment_method': 'paypal'
+            "client_secret": "ELiRbt7UjajjGTZGuXoYLTIZ4gx4TwEeqeAAxUilyOs-AbIRSBCGSwXl0GiV30sMp2lIGAbqkUkHAmJC"
+})
+
+class CreatePaymentView(APIView):
+    def post(self, request):
+        payment = paypalrestsdk.Payment({
+            "intent": "sale",
+            "payer": {
+                "payment_method": "paypal"
             },
-            'redirect_urls': {
-                'return_url': 'http://127.0.0.1:8000/',
-                'cancel_url': 'http://127.0.0.1:8000/'
+            "redirect_urls": {
+                "return_url": "http://localhost:3000/payment/execute",
+                "cancel_url": "http://localhost:3000/payment/cancel"
             },
-            'transactions': [{
-                'item_list': {
-                    'items': [{
-                        'name': 'item',
-                        'sku': 'item-sku',
-                        'price': '10.00',
-                        'currency': 'USD',
-                        'quantity': 1
+            "transactions": [{
+                "item_list": {
+                    "items": [{
+                        "name": "item",
+                        "sku": "item",
+                        "price": "1.00",
+                        "currency": "USD",
+                        "quantity": 1
                     }]
                 },
-                'amount': {
-                    'currency': 'USD',
-                    'total': '10.00'
-                }
+                "amount": {
+                    "total": "1.00",
+                    "currency": "USD"
+                },
+                "description": "This is the payment transaction description."
             }]
         })
 
-        # Redirect the user to PayPal to authorize the payment
-        return Response({'redirect_url':'d'})
-    
-class PaymentResponseView(APIView):
-    def post(self, request):
-        # Get the payment ID from the request
-        payment_id = request.data['payment_id']
-
-        # Get the payment object from PayPal
-        payment = Payment.find(payment_id)
-
-        # Verify the payment
-        if payment.state == 'approved':
-            # Update the order status
-            # ...
-            return Response({'message': 'Payment successful'})
+        if payment.create():
+            for link in payment.links:
+                if link.rel == "approval_url":
+                    approval_url = link.href
+                    return Response({"approval_url": approval_url})
         else:
-            # Handle payment failure
-            # ...
-            return Response({'message': 'Payment failed'})
+            return Response({"error": payment.error}, status=status.HTTP_400_BAD_REQUEST)
+
+class ExecutePaymentView(APIView):
+    def post(self, request):
+        payment_id = request.data.get('paymentID')
+        payer_id = request.data.get('payerID')
+        payment = paypalrestsdk.Payment.find(payment_id)
+
+        if payment.execute({"payer_id": payer_id}):
+            return Response({"status": "Payment executed successfully"})
+        else:
+            return Response({"error": payment.error}, status=status.HTTP_400_BAD_REQUEST)
